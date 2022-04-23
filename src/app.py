@@ -25,12 +25,26 @@ def get_url(slug):
     item = response.get('Item', None)
     logger.debug(item)
     if item is None:
-        raise NotFoundError(f'url not found for: {slug}')
+        return Response(
+            status_code = 404,
+            content_type='text/html',
+            body=f"""
+                <html>
+                    <head>
+                        <meta http-equiv="refresh" content="3;url=https://blog.walmsles.io">
+                    </head>
+                    <body >
+                        <h3>go.walmsl.es</h3>
+                        URL Target not found for <b>{slug}</b>
+                    </body>
+                </html>
+            """
+        )
 
     return Response(
         status_code=301, 
         content_type='text/plain', 
-        body = '',
+        body='',
         headers={"Location": item.get('url')}
     )
 
