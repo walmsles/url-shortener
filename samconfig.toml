@@ -1,0 +1,26 @@
+version = 0.1
+[dev]
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "url-short-dev"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-v4cb2gw082ta"
+s3_prefix = "url-short-dev"
+region = "ap-southeast-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
+parameter_overrides = "Environment=dev"
+
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "url-shortener-prod"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-lqglmql2v3t9"
+s3_prefix = "url-shortener-prod"
+region = "ap-southeast-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "Environment=\"prod\""
+image_repositories = []

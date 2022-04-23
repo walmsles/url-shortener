@@ -1,0 +1,41 @@
+import json
+
+
+import json
+import boto3
+import os
+from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
+from aws_lambda_powertools.event_handler.api_gateway import Response
+from aws_lambda_powertools.event_handler.exceptions import NotFoundError
+from aws_lambda_powertools.logging import Logger
+from aws_lambda_powertools.tracing import Tracer
+
+app = APIGatewayHttpResolver()
+logger = Logger()
+tracer = Tracer()
+
+dynamoClient = boto3.resource('dynamodb')
+table = dynamoClient.Table(os.environ.get('TABLE', 'TABLE'))
+
+@app.get('/<slug>')
+@tracer.capture_method()
+def get_url(slug):
+    logger.debug(f'slug: {slug}')
+    response = table.get_item(Key={"slug": slug})
+    item = response.get('Item', None)
+    logger.debug(item)
+    if item is None:
+        raise NotFoundError(f'url not found for: {slug}')
+
+    return Response(
+        status_code=301, 
+        content_type='text/plain', 
+        body = '',
+        headers={"Location": item.get('url')}
+    )
+
+@logger.inject_lambda_context()
+@tracer.capture_lambda_handler()
+def lambda_handler(event, context):
+    logger.debug('resolving API')
+    return app.resolve(event, context)

@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  url-shortener
+
+  Sample SAM Template for url-shortener
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+
+Mappings:
+  EnvironmentMap:
+    dev:
+      Domain: '{{resolve:ssm:/url-shortener/domain:1}}'
+      CertificateArn: '{{resolve:ssm:/url-shortener/certificateARN:1}}'
+      LogLevel: '{{resolve:ssm:/url-shortener/certificateARN:1}}'
+    prod:
+      Domain: '{{resolve:ssm:/url-shortener/domain:2}}'
+      CertificateArn: '{{resolve:ssm:/url-shortener/certificateARN:2}}'
+      LogLevel: '{{resolve:ssm:/url-shortener/log-level:1}}'
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  UrlDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Type: String
+        Name: slug
+      ProvisionedThroughput:
+        WriteCapacityUnits: 2
+        ReadCapacityUnits: 2
+      SSESpecification:
+        SSEEnabled: true
+      TableName: !Sub url-short-database-${Environment}
+
+  UrlShortHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Domain:
+        CertificateArn: !FindInMap [EnvironmentMap, !Ref Environment, CertificateArn]
+        DomainName: !FindInMap [EnvironmentMap, !Ref Environment, Domain]
+        EndpointConfiguration: REGIONAL
+        SecurityPolicy: TLS_1_2
+      DisableExecuteApiEndpoint: true
+        
+  UrlShortFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub ${Environment}-url-short
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Environment:
+        Variables:
+          TABLE: !Ref UrlDatabase
+          LOG_LEVEL: !FindInMap [EnvironmentMap, !Ref Environment, LogLevel]
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UrlDatabase
+      Architectures:
+        - arm64
+      Events:
+        UrlShort:
+          Type: HttpApi 
+          Properties:
+            Path: /{slug}
+            Method: get
+            ApiId: !Ref UrlShortHttpApi
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  UrlShortApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${UrlShortHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/{proxy+}"
+  UrlShortFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt UrlShortFunction.Arn
+  UrlShortFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt UrlShortFunctionRole.Arn
