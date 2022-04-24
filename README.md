@@ -4,7 +4,7 @@ This is a simple serverless URL shortening project using a combination of Route5
 
 I wanted to create my own personal URL Shortener to provide a more personal touch to links that I share in blog posts and social media :bowtie: 
 
-I have created a domain called: **walmsl.es** which is based on my [Twitter handle](https://twitter.com/walmsles) I use and also the profile slug on [LinkedIn](https://www.linkedin.com/in/walmsles/) and [GitHub](https://github.com/walmsles).  So now I can create my very won short urls which will have a URL like this: [https://go.walmsl.es/30bf0976](https://go.walmsl.es/30bf0976).
+I have created a spanish domain, **walmsl.es**, which is based on the [Twitter handle](https://twitter.com/walmsles) I use and also the profile slug on [LinkedIn](https://www.linkedin.com/in/walmsles/) and [GitHub](https://github.com/walmsles).  So now I can create my very won short urls which will have a URL like this: [https://go.walmsl.es/30bf0976](https://go.walmsl.es/30bf0976).
 
 This partifcular project automates 99.99999% of creating the project other than setup of Route53 and the actual domain name (I do this all in a master account seperate from where my production code is deployed so this is the manual part).
 
