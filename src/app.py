@@ -6,7 +6,7 @@ import boto3
 import os
 from aws_lambda_powertools.event_handler import APIGatewayHttpResolver
 from aws_lambda_powertools.event_handler.api_gateway import Response
-from aws_lambda_powertools.event_handler.exceptions import NotFoundError
+from aws_lambda_powertools.event_handler.exceptions import InternalServerError
 from aws_lambda_powertools.logging import Logger
 from aws_lambda_powertools.tracing import Tracer
 
@@ -52,4 +52,22 @@ def get_url(slug):
 @tracer.capture_lambda_handler()
 def lambda_handler(event, context):
     logger.debug('resolving API')
-    return app.resolve(event, context)
+    try:
+        return app.resolve(event, context)
+    except Exception as e:
+        logger.error(str(e))
+        return Response(
+            status_code = 500,
+            content_type='text/html',
+            body=f"""
+                <html>
+                    <head>
+                        <meta http-equiv="refresh" content="3;url=https://blog.walmsles.io">
+                    </head>
+                    <body >
+                        <h3>go.walmsl.es</h3>
+                        Internal Server Error, lookup aborted
+                    </body>
+                </html>
+            """
+        )
