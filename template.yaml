@@ -30,17 +30,22 @@ Globals:
 
 Resources:
   UrlDatabase:
-    Type: AWS::Serverless::SimpleTable
+    Type:  AWS::DynamoDB::Table
     Properties:
-      PrimaryKey:
-        Type: String
-        Name: slug
-      ProvisionedThroughput:
-        WriteCapacityUnits: 2
-        ReadCapacityUnits: 2
+      TableName: !Sub url-short-${Name}-${Environment}
+      BillingMode: PROVISIONED
+      DeletionProtectionEnabled: true
       SSESpecification:
         SSEEnabled: true
-      TableName: !Sub url-short-${Name}-${Environment}
+      AttributeDefinitions:
+        - AttributeName: slug
+          AttributeType: S
+      KeySchema:
+        - AttributeName: slug
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
 
   UrlShortHttpApi:
     Type: AWS::Serverless::HttpApi
