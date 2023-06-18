@@ -1,46 +1,97 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-    aws-sam-template-python
+  url-shortener with a simple python lambda and dynamoDB
 
-    Powertools example
+Parameters:
+  Name:
+    Type: String
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  CertificateArn:
+    Type: String
+  DomainName:
+    Type: String
+  HostedZoneId:
+    Type: String
+  RedirectUrl:
+    Type: String
+  LogLevel:
+    Type: String
+    Default: "ERROR"
 
-Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
-    Function:
-        Timeout: 7
-        MemorySize: 128
-        Runtime: python3.9
+Globals:
+  Function:
+    Timeout: 3
 
 Resources:
-    HelloWorldFunction:
-        Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
-        Properties:
-            Handler: app.lambda_handler
-            CodeUri: services/hello_world
-            Description: Hello World function
-            Architectures:
-                - x86_64
-            Tracing: Active
-            Events:
-                HelloPath:
-                    Type: Api # More info about API Event Source: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html
-                    Properties:
-                        Path: /hello
-                        Method: GET
-             # Powertools env vars: https://awslabs.github.io/aws-lambda-powertools-python/#environment-variables
-            Environment:
-                Variables:
-                    POWERTOOLS_SERVICE_NAME: PowertoolsHelloWorld
-                    POWERTOOLS_METRICS_NAMESPACE: Powertools
-                    LOG_LEVEL: INFO
-            Tags:
-                LambdaPowertools: python
+  UrlDatabase:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Type: String
+        Name: slug
+      ProvisionedThroughput:
+        WriteCapacityUnits: 2
+        ReadCapacityUnits: 2
+      SSESpecification:
+        SSEEnabled: true
+      TableName: !Sub url-short-${Name}-${Environment}
+
+  UrlShortHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub url-short-${Name}-${Environment}
+      Domain:
+        CertificateArn: !Ref CertificateArn
+        DomainName: !Ref DomainName
+        EndpointConfiguration: REGIONAL
+        SecurityPolicy: TLS_1_2
+        Route53:
+          DistributionDomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      DisableExecuteApiEndpoint: true
+
+  UrlShortFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: !Sub url-short-${Name}-${Environment}
+      CodeUri: services/shortener
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Environment:
+        Variables:
+          TABLE: !Ref UrlDatabase
+          LOG_LEVEL: !Ref LogLevel
+          DOMAIN: !Ref DomainName
+          REDIRECT: !Ref RedirectUrl
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UrlDatabase
+      Architectures:
+        - arm64
+      Events:
+        UrlShort:
+          Type: HttpApi
+          Properties:
+            Path: /{slug}
+            Method: get
+            ApiId: !Ref UrlShortHttpApi
 
 Outputs:
-    HelloWorldApi:
-      Description: "API Gateway endpoint URL for Prod environment for Hello World Function"
-      Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
-
-    HelloWorldFunction:
-      Description: "Hello World Lambda Function ARN"
-      Value: !GetAtt HelloWorldFunction.Arn
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  UrlShortApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${UrlShortHttpApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/{proxy+}"
+  UrlShortFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt UrlShortFunction.Arn
+  UrlShortFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt UrlShortFunctionRole.Arn
