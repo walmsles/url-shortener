@@ -28,6 +28,22 @@ domain = get_env("DOMAIN")
 redirect = get_env("REDIRECT")
 
 
+def temporary_redirect(url: str) -> Response:
+    return Response(
+        status_code=302,
+        content_type="text/plain",
+        body="",
+        headers={"Location": url},
+    )
+
+
+def permanent_redirect(url: str) -> Response:
+    response: Response = temporary_redirect(url)
+    response.status_code = 301
+
+    return response
+
+
 @app.get("/<slug>")
 @tracer.capture_method()
 def get_url(slug: str) -> Response:
@@ -36,38 +52,14 @@ def get_url(slug: str) -> Response:
     item = response.get("Item", None)
     logger.debug(item)
     if item is None:
-        return Response(
-            status_code=404,
-            content_type="text/html",
-            body=f"""
-                <html>
-                    <head>
-                        <meta http-equiv="refresh" content="3;url={redirect}">
-                    </head>
-                    <body >
-                        <h3>{domain}</h3>
-                        URL Target not found for <b>{slug}</b>
-                    </body>
-                </html>
-            """,
-        )
+        return temporary_redirect(redirect)
 
-    return Response(
-        status_code=301,
-        content_type="text/plain",
-        body="",
-        headers={"Location": item.get("url")},
-    )
+    return permanent_redirect(item.get("url"))
 
 
 @app.get("/")
 def get_domain() -> Response:
-    return Response(
-        status_code=301,
-        content_type="text/plain",
-        body="",
-        headers={"Location": f"{redirect}"},
-    )
+    return permanent_redirect(redirect)
 
 
 @logger.inject_lambda_context()
@@ -78,18 +70,4 @@ def lambda_handler(event, context):
         return app.resolve(event, context)
     except Exception as e:
         logger.error(str(e))
-        return Response(
-            status_code=500,
-            content_type="text/html",
-            body=f"""
-                <html>
-                    <head>
-                        <meta http-equiv="refresh" content="3;url={redirect}">
-                    </head>
-                    <body >
-                        <h3>{domain}</h3>
-                        Internal Server Error, lookup aborted
-                    </body>
-                </html>
-            """,
-        )
+        return temporary_redirect(redirect)
