@@ -1,17 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  url-shortener with a simple python lambda and dynamoDB
+  url-shortener with a python lambda and dynamoDB
 
 Parameters:
-  Name:
-    Type: String
-  Environment:
-    Type: String
-    Default: dev
-    AllowedValues:
-      - dev
-      - prod
   CertificateArn:
     Type: String
   DomainName:
@@ -32,7 +24,6 @@ Resources:
   UrlDatabase:
     Type:  AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub url-short-${Name}-${Environment}
       BillingMode: PROVISIONED
       DeletionProtectionEnabled: true
       SSESpecification:
@@ -50,7 +41,6 @@ Resources:
   UrlShortHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: !Sub url-short-${Name}-${Environment}
       Domain:
         CertificateArn: !Ref CertificateArn
         DomainName: !Ref DomainName
@@ -64,7 +54,6 @@ Resources:
   UrlShortFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      FunctionName: !Sub url-short-${Name}-${Environment}
       CodeUri: services/shortener
       Handler: app.lambda_handler
       Runtime: python3.10
