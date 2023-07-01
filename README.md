@@ -17,8 +17,6 @@ The URL Shortener is pretty simple to operate.  Someone will enter a URL with a 
 
 Before deploying this project has several Parameters that need to be provided to ensure corect deployment and configuration:
 
-- **Environment** - defines the environment to be deployed (used in the naming of resources to assist with finding them in your account).  Defaults to **dev**.
-- **Name** - the name of the Project to enable multiple deployments in the same account if you require it.  The combination of **Name** and **Environment** must be unique.
 - **DomainName** - the domain name for the Custom Domain created for the HTTP Rest API.
 - **HostedZoneId** - The ID for the hosted Zone of the **DomainName** used for your deployment.
 - **CertificateArn** - the ARN of the certificate that you will need to manually create to enable the custom domain on the HTTP API.
