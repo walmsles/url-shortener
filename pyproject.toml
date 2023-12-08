@@ -8,6 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+aws-lambda-powertools = {extras = ["tracer"], version = "^2.21.0"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
@@ -18,11 +19,6 @@ isort = "^5.12.0"
 boto3 = "^1.26.160"
 
 
-
-
-
-[tool.poetry.group.shortener.dependencies]
-aws-lambda-powertools = {extras = ["tracer"], version = "^2.17.0"}
 
 [build-system]
 requires = ["poetry-core"]
